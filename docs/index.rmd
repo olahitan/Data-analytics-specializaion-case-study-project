@@ -1,0 +1,408 @@
+---
+title: "Case Study: How can a wellness company play it smart?"
+author: "Famuwagun Olaitan"
+date: "2/7/2023"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Case Study: .How Can a Wellness Technology Company Play It Smart? 
+
+## Company: Bellabeat: WOMAN HEALTH TRACKER. Data: [FitBit Fitness Tracker Data](https://www.kaggle.com/arashnic/fitbit)
+
+
+## Introduction
+
+This Case Study project to fulfill Google Data Analytics Capstone project on Coursera. For the purposes of this exercise, we will be using public data from a bike share company called Bellabeat. In this scenario, and from now on, Bellabeat will be referred to as Beat. In this exercise, I work for a fictional company, Bellabeat. In order to answer the key business questions, I will follow the steps of the data analysis process: ask, prepare, process, analyze, share, and act.
+
+## About the company
+
+Bellabeat, a high-tech manufacturer of health-focused products for women. Bellabeat is a successful small company, but they have the potential to become a larger player in the global smart device market. Urška Sršen, cofounder and Chief Creative Officer of Bellabeat, believes that analyzing smart device fitness data could help unlock new growth opportunities for the company.
+Urška Sršen and Sando Mur founded Bellabeat, a high-tech company that manufactures health-focused smart products.
+Sršen used her background as an artist to develop beautifully designed technology that informs and inspires women around
+the world. Collecting data on activity, sleep, stress, and reproductive health has allowed Bellabeat to empower women with
+knowledge about their own health and habits. Since it was founded in 2013, Bellabeat has grown rapidly and quickly
+positioned itself as a tech-driven wellness company for women.
+
+## Questions for the analysis
+
+```
+1. What are some trends in smart device usage?
+2. How could these trends apply to Bellabeat customers?
+3. How could these trends help influence Bellabeat marketing strategy
+```
+## Business task
+Identify potential opportunities for growth and recommendations for the Bellabeat marketing strategy improvement based on trends in smart device usage.
+
+## Process Phase:
+In this phase we will process the data by cleaning and ensuring that it is correct,relevant,complete and error free.
+
+-We have to check if data contains any missing or null values
+-Transform the data into format we want for the analysis
+
+## Loading packages
+
+```{r packages}
+library(tidyverse)
+library(lubridate)
+library(timechange)
+library(ggplot2)
+library(dplyr)
+library(gsubfn)
+library(proto)
+library(RSQLite)
+library(sqldf)
+library(plotrix)
+library(skimr)
+```
+
+## Upload the dataset
+The data that is provided is [FitBit Fitness Tracker Data](https://www.kaggle.com/arashnic/fitbit) . This dataset has 18 different csv files that range from Daily activity, calories, steps; hourly calories, intensities, and steps; and heart rate, sleep data and weight logs. After looking at the types of data collected by these 30 fitbit users, i discovered: * No water intake data has been collected
+
+These data may not actually assist me, but that will come with exploration.
+Load the CSV files
+The data frames I’ll be working with in this case study will be creating objects for:
+
+- daily_activity
+
+- daily calories
+
+- sleep day
+
+- weight log info
+
+- daily intensities
+
+```{r}
+Daily_Activity <-read.csv("C:\\Users\\LAITAN PC\\Desktop\\case_study2\\Fitabase Data 4.12.16-5.12.16\\dailyActivity_merged.csv")
+Sleep_Day <-read.csv("C:\\Users\\LAITAN PC\\Desktop\\case_study2\\Fitabase Data 4.12.16-5.12.16\\sleepDay_merged.csv")
+Weight_Log <-read.csv("C:\\Users\\LAITAN PC\\Desktop\\case_study2\\Fitabase Data 4.12.16-5.12.16\\weightLogInfo_merged.csv")
+Daily_calories <-read.csv("C:\\Users\\LAITAN PC\\Desktop\\case_study2\\Fitabase Data 4.12.16-5.12.16\\dailyCalories_merged.csv")
+Daily_intensities <-read.csv("C:\\Users\\LAITAN PC\\Desktop\\case_study2\\Fitabase Data 4.12.16-5.12.16\\dailyIntensities_merged.csv")
+```
+
+## Check and Removing 'unwanted bad' data
+We need to see if there are any null or missing values in the data. We can check this using the following commands.
+
+```{r}
+str(Daily_Activity)
+```
+
+```{r}
+skim(Daily_Activity)
+```
+
+
+```{r}
+head(Sleep_Day)
+```
+
+
+```{r}
+str(Weight_Log)
+```
+
+```{r}
+skim(Weight_Log)
+```
+
+```{r}
+head(Weight_Log)
+```
+
+
+## After executing these commands we found out the:
+
+- Number of records and columns
+- Number of null and non null values
+- Data type of every columns
+
+So we get to know that there are 940 records in daily calories, daily intensities, and daily_activity data, 413 in daily_sleep and 67 in weight_log. There are no null values present in any of the data set, So there is no requirement to clean the data. But the date column is in character format, so we need to convert it into datetime64 type. I have also created **month** and **day** of **week** column as we need them in analysis.
+
+```{r}
+Daily_Activity$Rec_Date <- as.Date(Daily_Activity$ActivityDate,"%m/%d/%y")
+Daily_Activity$month <- format(Daily_Activity$Rec_Date,"%B")
+Daily_Activity$day_of_week <- format(Daily_Activity$Rec_Date,"%A")
+```
+
+We are also going to count unique IDs to confirm whether data has 30 IDs as claimed by the survey. We can do this with 2 approaches first using direct function to calculate and second using SQL query.
+
+```{r}
+n_distinct(Daily_Activity$Id)
+```
+There are 33 unique IDs, instead of 30 unique IDs as expected. Some users may have created additional IDs during the survey period.
+
+Now the **data cleaning** and **manipulation** is done.Now data is ready to be analyzed.
+
+
+## **Analyze Phase:**
+
+## Let prepare the manipulated data for proper analysis
+Now, we need to summarize the data. So that we can derive insights from the ready clean data to help drive decision making.
+
+**To do:**
+
+- Find the suammry of **Daily_activity** and **Weight_log**
+
+
+```{r}
+Daily_Activity %>%  select(TotalSteps,TotalDistance,SedentaryMinutes,    VeryActiveMinutes) %>% summary()
+```
+```{r}
+Weight_Log%>%  select(WeightKg,BMI) %>% summary()
+```
+
+
+## **Statistical interpretation:**
+
+1.**Findings from Daily Activity data:**
+
+- The average count of recorded steps is 7638 which is less than recommended 10000 steps and average of total distance covered is 5.490 km which is also less than recommended 8 km mark.
+- The average sedentary minutes is 991.2 minutes or 16.52 hours which is very high as it should be at most 7 hours.Even if you are doing enough physical activity, sitting for more than 7 to 10 hours a day is bad for your health. (source: HealthyWA article).
+- The average of very active minutes is 21.16 which is less than target of 30 minutes per day. (source:verywell fit)
+
+2.**Findings from weight log:**
+
+- We can not conclude healthiness of person just by knowing there weight, There are other factors like height,fat percentage affect in the health.
+- The average of BMI is 25.19 which is slightly grater than the healthy BMI range which is between 18 and 24.9.
+
+
+```{r}
+Avg_minutes_asleep <- sqldf("SELECT SUM(TotalSleepRecords),SUM(TotalMinutesAsleep)/SUM(TotalSleepRecords) as avg_sleeptime
+                            FROM Sleep_Day")
+Avg_minutes_asleep
+```
+
+
+```{r}
+Avg_TimeInBed <- sqldf("SELECT SUM(TotalTimeInBed)/SUM(TotalSleepRecords) as avg_timeInBed
+                       FROM Sleep_Day")
+
+Avg_TimeInBed
+```
+
+
+- There is difference of 35 minutes between time in bed and sleep time that means it takes on an average 20 to 30 minutes to fall asleep for peoples.
+
+## We will also calculate number of distinct records in daily sleep and weight log data.
+
+```{r}
+n_distinct(Sleep_Day$Id)
+```
+
+
+## **Share Phase:** Data visualizations 
+
+In this step, we will create some **visualizations** based on our **analysis** and **goal** of project.
+
+## Let check and count the activity by the week days
+
+```{r}
+Daily_Activity$day_of_week <- ordered(Daily_Activity$day_of_week,levels=c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"))
+
+ggplot(data=Daily_Activity) + geom_bar(mapping = aes(x=day_of_week),fill="blue") +
+  labs(x="Day of week",y="Count",title="No. of times users used tracker across week")
+```
+ As we can see, the frequency of usage of FitBit fitness tracker application as showed on the bar graph tend to be  high on **sunday, monday, and tuesday** than other week days. This behaviour is as result of more activity as the week go by that make people get busy in mid week towards the  weekend days which can be due to work pressure and they don’t get enough time to track their activity.That’s why people are more active on sunday and two days that follws.
+
+
+## Let correlate the daily_step with the total_calories burns.
+
+```{r}
+mean_steps <- mean(Daily_Activity$TotalSteps)
+mean_steps
+```
+- the output show that average steps per days tracked using FitBit Application is **7637.911**
+
+```{r}
+mean_calories <- mean(Daily_Activity$Calories)
+mean_calories
+```
+- the output show that average calories burnt per days as tracked using FitBit Application is **2303.61**
+
+```{r}
+Avg_Calories_burn_per_step_taken <-mean_steps/mean_calories
+Avg_Calories_burn_per_step_taken
+```
+- The average calories burned per steps taken is **3.315627** calories.
+
+
+```{r}
+ggplot(data=Daily_Activity) + geom_point(mapping=aes(x=TotalSteps, y=Calories, color=Calories)) +
+geom_hline(mapping = aes(yintercept=mean_calories),color="yellow",lwd=1.0) +
+  geom_vline(mapping = aes(xintercept=mean_steps),color="red",lwd=1.0) +
+  geom_text(mapping = aes(x=10000,y=500,label="Average Steps",srt=-90)) +
+  geom_text(mapping = aes(x=29000,y=2500,label="Average Calories")) +
+  labs(x="Steps Taken",y="Calories Burned",title = "Calories burned vs steps taken")
+```
+
+
+## Calories burned for every step taken
+
+- It is a positive correlation with some outliers at bottom and top of scatter plot.
+- It is clear from the plot that intensity of calories burned increase with number of steps taken.
+## Let compare the total steps taken with Sedentary Minutes
+
+```{r}
+ggplot(data=Daily_Activity, aes(x=TotalSteps, y=SedentaryMinutes, color = Calories)) + geom_point() +
+geom_smooth(method = "loess",color="green") + 
+labs(x="Total Steps",y="Sedentary Minutes",title="Total Steps vs Sedentary Minutes")
+```
+
+
+## Total steps taken vs sedentary minutes
+
+I was expecting a totally inverse relationship between steps taken and sedentary minutes.
+
+- At the start when the steps taken are less than 10000 the relation between them is inverse, but as number of steps increases beyond 10000 there is no drastic change in relation.
+- I got surprised watching the relation between steps and sedentary minutes after 15000 steps as it becomes slightly positive.
+
+## Let compare the sleeps time with the time in beds
+
+```{r}
+ggplot(data=Sleep_Day, aes(x=TotalMinutesAsleep, y=TotalTimeInBed)) + geom_point() + stat_smooth(method = lm) +
+  labs(x="Total Minutes a sleep", y="Total Time in Bed", title = "Sleep Time vs Time in Bed")
+```
+
+## Relation between sleep and time in bed
+
+- As we can see, there is a strong positive correlation between TotalMinutesAsleep and TotalTimeInBed, but there are some outliers in data in the middle and top of plot.
+- The outliers are one who spend lot of time in bed but didn’t actually sleep.There can be different reasons for that.
+
+
+## Let compare the Active minutes with the calories burn
+
+```{r}
+ggplot(data=Daily_Activity,aes(x = VeryActiveMinutes, y = Calories, color = Calories)) + geom_point() + 
+geom_smooth(method = "loess",color="orange") +
+labs(x="Very Active Minutes",y="Calories",title = "Very Active Minutes vs Calories Burned")
+```
+
+## Relation between very active minutes and calories burned
+
+- As we can see,very active minutes and calories burned are highly correlated with each other with some outliers at bottom left and top left of the plot.
+
+
+## Let compare the sedentary minutes with the calories burned
+```{r}
+ggplot(data=Daily_Activity,aes(x=SedentaryMinutes,y=Calories,color=Calories)) + geom_point() + 
+geom_smooth(method="loess",color="red") + 
+labs(y="Calories", x="Sedentary Minutes", title="Calories vs. Sedentary Minutes")
+```
+## Relation between sedentary minutes and calories burned:
+
+I was expecting the relation between sedentary minutes and calories burned to be totally inverse in nature.
+
+- The data is showing positive correlation up to 1000 sedentary minutes.
+- After 1000 sedentary minutes the relation is inverse as I expected.
+
+
+## Now,we will calculate the sum of individual minute column from daily activity data 
+This visualization will show the relationships between minutes in Daily Activity for proper data correlation
+```{r}
+activity_min <- sqldf("SELECT SUM(VeryActiveMinutes),SUM(FairlyActiveMinutes),
+      SUM(LightlyActiveMinutes),SUM(SedentaryMinutes)
+      FROM Daily_Activity")
+activity_min
+```
+As we got the values, we will use these values to plot a 3D pie chart to compare the percentage of activity by minutes.
+
+
+```{r}
+x <- c(19895,12751,181244,931738)
+piepercent <- round(100*x / sum(x), 1)
+colors = c("red","blue","green","yellow")
+ 
+pie3D(x,labels = paste0(piepercent,"%"),col = colors,main = "Percentage of Activity in Minutes")
+legend("topright",c("VeryActiveMinutes","FairlyActiveMinutes","LightlyActiveMinutes","SedentaryMinutes"), cex=0.75, fill = colors)
+```
+## Percentage of activity in Minutes:
+
+As we can see,
+
+- The percentage of sedentary minutes is very high than all other,which covers 81.3 % of pie this indicates that people are inactive for longer period of time.
+- The percentage of very active and fairly active minutes is very less ie. 1.7%,1.1% respectively,which is very less compared to other activities.
+
+
+Now, we will calculate sum of different distance values from daily activity data:
+```{r}
+Activity_dist <- sqldf("SELECT SUM(ModeratelyActiveDistance),SUM(LightActiveDistance),
+      SUM(VeryActiveDistance),SUM(SedentaryActiveDistance)
+      FROM Daily_Activity")
+Activity_dist
+```
+
+As we can see that the values of sedentaryActiveDistance is very less as compare to other distances,So I am excluding it in drawing a 3D pie chart to compare the percentage of activity in minutes.
+
+```{r}
+y <- c(533.49,3140.37,1412.52)
+
+piepercent <- round(100*y / sum(y), 1)
+colors = c("orange","green","blue")
+pie3D(y,labels = paste0(piepercent,"%"),col=colors,main = "Percentage of Activity in Distance")
+legend("topright",c("ModeratelyActiveDistance","LightlyActiveDistance","VeryActiveDistance"),cex=0.75,fill = colors)
+```
+## Percentage of activity in distance:
+
+As we can see,
+
+- The percentage of lightly active distance is highest with 61.7% and that of moderately active distance is 10.5%.
+- The percentage of very active distance is 27.8% which is good, but it can be increased further so that people can achieve there fitness goals.
+
+Now, we will calculate the count of people with over weight: The BMI for healthy person is between 18.5 and 24.9 and the persons who’s BMI is above 24.9 are considered to be overweight.(source:CDC)
+
+```{r}
+count_overweight <- sqldf("SELECT COUNT(DISTINCT(Id))
+                          FROM Weight_Log
+                          WHERE BMI > 24.9")
+count_overweight
+```
+As we got the values, we will use these values to plot a 3D pie chart to compare the percentage of people with overweight vs healthy weight.
+
+
+
+```{r}
+z <- c(5,3)
+piepercent <- round(100*z / sum(z),1)
+colors = c("red","green")
+pie3D(z,labels=paste0(piepercent,"%"),explode=0.1,col=colors,radius=1,main="Percentage of people with Over Weight vs Healthy Weight")
+legend("topright",c("OverWeight","HealthyWeight"), cex=0.75,fill=colors)
+```
+
+We have less number of records,but we can see:
+
+- The percentage of people with over weight is 62.5% which is high as compared to percentage of people with healthy weight which is 37.5%. So, there is a very good opportunity to increase the percentage of people with healthy weight.
+
+
+## Act Phase:
+The goal of analysis is correct as we got many useful insights from the FitBit data,which will help us to make data driven decision. Both companies develop similar kind of products.So,the common trends surrounding health and fitness can also be applied to Bellabeat customers.
+
+## Based on the result and analysis we make the following recommendations:
+
+**1.** We have analyzed that most of the people use application to track the steps and calories burned;less number of people use it to track sleep and very few use it to track weight records.So, I will suggest to focus on step,calories and sleep tracking more in application.
+
+**2.** People prefer to track their activities on Sunday, Monday and Tuesday than other week days.I think this behavior is because people get busier in week end days due to work pressure and they don’t get enough time to track their activity. i recommend using the Bellabeat Application to send notification to remind the potential customers to perpetually track their daily activity to know the actual calories being burn.
+
+**3.** The relation between steps taken vs calories burned and very active minutes vs calories burned shows positive correlation.So, this can be a good marketing strategy.
+
+**4**. Majority of users 81.3% who are using the FitBit app are inactive for longer period of time and not using it for tracking their health habits.So, this can be a great chance to use this information for market strategy as Bellabeat can alert people about their sedentary behavior time to time either on application or on tracker itself .
+
+**5.** Majority of the users 62.5% who are using fitness tracker are overweight.So, that is an opportunity to recommend the of the Bellabeat Application to people and outline how it can help them monitor the weight loss and as well to make them get better healthy conditions.
+
+**6**. Bellabeat marketing team can encourage users by educating and equipping their potential customers with knowledge about fitness benefits, suggest different types of exercises, calories intake and burn rate information on Bellabeat application.
+
+
+**Thank you**
+*olaitan famuwagun*
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
